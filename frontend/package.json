@@ -1,0 +1,29 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "android": "export BUILD_MODE=assembleRelease; ./build-android.sh",
+    "android-dev": "export BUILD_MODE=assembleDebug; ./build-android.sh",
+    "postinstall": "node scripts/copy-stockfish.mjs"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.2",
+    "sass": "^1.108.2",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
+    "chess.js": "^1.4.0",
+    "stockfish": "^19.0.1"
+  }
+}
