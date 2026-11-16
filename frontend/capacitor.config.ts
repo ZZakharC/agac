@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.zzakharc.agac',
-  appName: 'Chess Analyzer',
+  appName: 'AGAC',
   webDir: 'dist',
   server: {
     // origin страницы будет http://localhost, поэтому ws:// не блокируется как mixed content

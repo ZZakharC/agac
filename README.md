@@ -54,6 +54,8 @@ npm run dev
 - **`ANDROID_HOME`**
 - **`ANDROID_SDK_ROOT`**
 
+Сборка
+
 ```bash
 cd frontend
 npm run android-dev
@@ -68,6 +70,29 @@ npm run android-dev
 - **`RELEASE_STORE_PASSWORD`**
 - **`RELEASE_KEY_ALIAS`**
 - **`RELEASE_KEY_PASSWORD`**
+
+Так же для подписи необходимо добавить в `android/app/build.gradle`:
+
+```gradle
+android {
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("RELEASE_KEYSTORE"))
+            storePassword System.getenv("RELEASE_STORE_PASSWORD")
+            keyAlias System.getenv("RELEASE_KEY_ALIAS")
+            keyPassword System.getenv("RELEASE_KEY_PASSWORD")
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+}
+```
+
+Сборка
 
 ```bash
 cd frontend
