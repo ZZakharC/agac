@@ -390,7 +390,7 @@ $('export').addEventListener('click', async () => {
     }
 });
 
-$('import').addEventListener('click', () => $<HTMLInputElement>('import-file').click());
+$('import').addEventListener('click', () => $<HTMLInputElement>('import_file').click());
 
 $<HTMLInputElement>('import_file').addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
