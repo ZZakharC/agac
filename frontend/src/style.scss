@@ -214,7 +214,6 @@ header {
     }
 
     .left {
-        /* доска не больше 600px и не шире экрана; ниже ~48em колонки переносятся друг под друга */
         flex: 1 1 28em;
         max-width: min(600px, 100%);
         min-width: 0;
@@ -288,7 +287,6 @@ header {
                         background: var(--last);
                     }
 
-                    /* координаты масштабируются вместе с клеткой */
                     .co {
                         position: absolute;
                         font: 600 15cqw/1 "Roboto";
@@ -406,7 +404,7 @@ header {
                 justify-content: center;
                 align-items: center;
                 padding: 0.25em 0.5em;
-                
+
                 svg {
                     width: 2em;
                     height: 2em;
@@ -542,15 +540,41 @@ header {
                 }
             }
 
-            textarea {
-                width: 100%;
-                resize: vertical;
-                font: 13px/1.4 "Roboto";
-                padding: 8px;
-                border: 1px solid var(--line);
-                border-radius: 4px;
-                background: var(--input);
-                color: var(--ink);
+            .pgn {
+                position: relative;
+                textarea {
+                    width: 100%;
+                    resize: vertical;
+                    font: 13px/1.4 "Roboto";
+                    padding: 8px;
+                    border: 1px solid var(--line);
+                    border-radius: 4px;
+                    background: var(--input);
+                    color: var(--ink);
+                    min-height: 2.5em;
+                }
+
+                button {
+                    position: absolute;
+                    top: 0.25em;
+
+                    background: color-mix(in srgb, var(--input) 50%, transparent 50%);
+                    border: none;
+
+                    &#copy_pgn {
+                        right: 2.25em;
+                    }
+
+                    &#clear_pgn {
+                        right: 0.25em;
+                    }
+
+                    svg {
+                        fill: var(--ink);
+                        width: 2em;
+                        height: 2em;
+                    }
+                }
             }
 
             .server {

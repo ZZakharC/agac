@@ -234,10 +234,8 @@ $('analyze').addEventListener('click', () => {
         return;
     }
 
-    const pgn = $<HTMLTextAreaElement>('pgn').value;
-
     try {
-        loadGame(pgn);
+        loadGame(pgn.value);
     } catch (e) {
         setStatus(e instanceof Error ? e.message : 'Некорректный PGN', true);
         return;
@@ -257,7 +255,7 @@ $('analyze').addEventListener('click', () => {
 
     const start = getMode() === 'local' ? startLocalAnalysis : startAnalysis;
 
-    job = start(pgn, Number($<HTMLSelectElement>('depth').value), {
+    job = start(pgn.value, Number($<HTMLSelectElement>('depth').value), {
         onProgress(done, total, index, ev) {
             state.positions[index] = ev;
             const bar = $<HTMLProgressElement>('progress');
@@ -349,8 +347,25 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+const pgn = $<HTMLTextAreaElement>('pgn');
+const copy_pgn = $<HTMLButtonElement>('copy_pgn');
+const clear_pgn = $<HTMLButtonElement>('clear_pgn');
+
+copy_pgn.addEventListener("click", () => {
+    navigator.clipboard.writeText(pgn.value);
+    copy_pgn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M9.55,18l-5.7-5.7l1.43-1.42l4.28,4.28l9.18-9.18L20.15,7.4L9.55,18Z"/></svg>`;
+
+    setTimeout(() => {
+        copy_pgn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M9,18q-0.82,0-1.41-0.59T7,16V4Q7,3.17 7.59,2.59T9,2h9q0.82,0 1.41,0.59T20,4V16q0,0.82-0.59,1.41T18,18H9Zm0-2h9V4H9V16ZM5,22q-0.83,0-1.41-0.59T3,20V6H5V20H16v2H5Zm4-6V4V16Z"/></svg>`;
+    }, 1000);
+});
+
+clear_pgn.addEventListener("click", () => {
+    pgn.value = "";
+});
+
 const modeSel = $<HTMLSelectElement>('mode');
-const serverField = $('server-field');
+const serverField = $('server_field');
 const serverInput = $<HTMLInputElement>('server');
 
 modeSel.value = getMode();
@@ -377,7 +392,7 @@ $('export').addEventListener('click', async () => {
 
 $('import').addEventListener('click', () => $<HTMLInputElement>('import-file').click());
 
-$<HTMLInputElement>('import-file').addEventListener('change', async (e) => {
+$<HTMLInputElement>('import_file').addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
 

@@ -46,7 +46,15 @@
 
         <aside class="right">
             <div class="panel">
-                <textarea id="pgn" rows="6" spellcheck="false" placeholder="Вставьте PGN партии"></textarea>
+                <div class="pgn">
+                    <textarea id="pgn" rows="6" spellcheck="false" placeholder="Вставьте PGN партии"></textarea>
+                    <button id="copy_pgn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M9,18q-0.82,0-1.41-0.59T7,16V4Q7,3.17 7.59,2.59T9,2h9q0.82,0 1.41,0.59T20,4V16q0,0.82-0.59,1.41T18,18H9Zm0-2h9V4H9V16ZM5,22q-0.83,0-1.41-0.59T3,20V6H5V20H16v2H5Zm4-6V4V16Z"/></svg>
+                    </button>
+                    <button id="clear_pgn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M7,21q-0.82,0-1.41-0.59T5,19V6H4V4H9V3h6V4h5V6H19V19q0,0.82-0.59,1.41T17,21H7ZM17,6H7V19H17V6ZM9,17h2V8H9v9Zm4,0h2V8H13v9ZM7,6V19V6Z"/></svg>
+                    </button>
+                </div>
 
                 <label class="server">Движок
                     <select id="mode">
@@ -54,7 +62,7 @@
                         <option value="server">Сервер</option>
                     </select>
                 </label>
-                <label class="server" id="server-field">Адрес сервера
+                <label class="server" id="server_field">Адрес сервера
                     <input id="server" placeholder="192.168.1.10:3000" inputmode="url" autocapitalize="off" spellcheck="false" />
                 </label>
 
@@ -84,7 +92,7 @@
                 <div>
                     <button id="import" class="ghost">Импорт</button>
                     <button id="export" class="ghost" disabled>Экспорт</button>
-                    <input id="import-file" type="file" accept=".json,application/json" hidden />
+                    <input id="import_file" type="file" accept=".json,application/json" hidden />
                 </div>
             </div>
         </aside>
