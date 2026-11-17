@@ -288,10 +288,8 @@ $('analyze').addEventListener('click', () => {
     render();
 });
 
-$('first').onclick = () => setPly(0);
 $('prev').onclick = () => setPly(state.ply - 1);
 $('next').onclick = () => setPly(state.ply + 1);
-$('last').onclick = () => setPly(state.fens.length - 1);
 $('flip').onclick = () => ((state.flipped = !state.flipped), render());
 
 $('moves').addEventListener('click', (e) => {
