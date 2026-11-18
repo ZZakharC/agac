@@ -218,6 +218,52 @@ header {
         max-width: min(600px, 100%);
         min-width: 0;
 
+        .captured {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5em;
+            border-radius: 3px;
+            min-height: 2em;
+            margin-left: var(--bar-offset, 1.75em);
+
+            div {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+
+                &.w .grp {
+                    filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff8);
+                }
+
+                .grp {
+                    display: flex;
+                    flex-direction: row;
+
+
+                    &+.grp {
+                        margin-left: -0.25em;
+                    }
+
+                    img {
+                        height: 1.5em;
+                        width: auto;
+                        pointer-events: none;
+
+                        &+img {
+                            margin-left: -1em;
+                        }
+                    }
+                }
+
+                .lead {
+                    font-size: 0.85em;
+                    font-weight: 600;
+                    color: var(--muted);
+                }
+            }
+        }
+
         .stage {
             display: flex;
             gap: 0.5em;
@@ -551,6 +597,7 @@ header {
 
             .pgn {
                 position: relative;
+
                 textarea {
                     width: 100%;
                     resize: vertical;

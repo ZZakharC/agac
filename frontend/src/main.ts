@@ -1,11 +1,12 @@
 import './style.scss';
 import { Chess } from 'chess.js';
-import { renderBoard } from './board';
+import { renderBoard, type PieceMove } from './board';
 import { BADGE_MARK, CLASS_LABEL, CLASS_MARK, esc, formatEval, winPercent } from './utils';
 import type { AnalysisResult, MoveAnalysis, PositionEval } from './types';
 import { startAnalysis, getMode, setMode, getServer, setServer, type Mode } from './api';
 import { startLocalAnalysis } from './localAnalysis';
 import { buildExport, exportFileName, parseImport, saveFile } from './io';
+import { isMuted, playSound, preloadSounds, setMuted } from './sound';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -20,11 +21,14 @@ interface State {
     ply: number;
     flipped: boolean;
     elapsedMs: number | null;
+    captured: (string | null)[];
+    movers: ('w' | 'b')[];
+    finished: boolean,
 }
 
 const state: State = {
     fens: [new Chess().fen()], sans: [], ucis: [], positions: [],
-    analysis: null, result: null, ply: 0, flipped: false, pgn: "", elapsedMs: null
+    analysis: null, result: null, ply: 0, flipped: false, pgn: "", elapsedMs: null, captured: [], movers: [], finished: false
 };
 
 let job: { cancel(): void } | null = null;
@@ -72,6 +76,9 @@ function loadGame(pgn: string) {
     state.result = null;
     state.ply = 0;
     state.pgn = pgn;
+    state.captured = h.map((m) => m.captured ?? null);
+    state.movers = h.map((m) => m.color);
+    state.finished = g.isGameOver() || ['1-0', '0-1', '1/2-1/2'].includes(g.header().Result ?? '');
 }
 
 function renderEvalBar() {
@@ -189,28 +196,104 @@ function renderSummary() {
     box.innerHTML = `<div class="sides">${side('w', r.headers.White || 'Белые')}${side('b', r.headers.Black || 'Чёрные')}</div>`;
 }
 
-function render() {
+function render(anim?: PieceMove[]) {
     const cur = state.ply > 0 ? state.analysis?.[state.ply - 1] : null;
 
     renderBoard($('board'), state.fens[state.ply], {
         flipped: state.flipped,
         lastMove: state.ply > 0 ? state.ucis[state.ply - 1] : null,
         arrow: state.positions[state.ply]?.bestMove ?? null,
-        badge: cur
-            ? { square: state.ucis[state.ply - 1].slice(2, 4), cls: cur.classification, mark: BADGE_MARK[cur.classification] }
-            : null,
+        badge: cur ? { square: state.ucis[state.ply - 1].slice(2, 4), cls: cur.classification, mark: BADGE_MARK[cur.classification] } : null,
+        animate: anim,
     });
 
     $<HTMLButtonElement>('export').disabled = !state.result;
+    renderCaptured();
     renderEvalBar();
     renderGraph();
     renderInfo();
     markCurrentMove();
 }
 
-function setPly(p: number) {
+const PIECE_ORDER = ['q', 'r', 'b', 'n', 'p'];
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+
+/** Перевес белых по материалу на доске, в пешках (учитывает превращения). */
+function materialLead(fen: string): number {
+    let diff = 0;
+    for (const ch of fen.split(' ')[0]) {
+        const v = PIECE_VALUE[ch.toLowerCase()];
+        if (v) diff += ch === ch.toUpperCase() ? v : -v;
+    }
+    return diff;
+}
+
+function capturedRow(by: 'w' | 'b', lead: number): string {
+    const taken: Record<string, number> = {};
+    for (let i = 0; i < state.ply; i++) {
+        const piece = state.captured[i];
+        if (piece && state.movers[i] === by) taken[piece] = (taken[piece] ?? 0) + 1;
+    }
+    const victim = by === 'w' ? 'b' : 'w';
+    const groups = PIECE_ORDER.filter((t) => taken[t])
+        .map((t) => `<span class="grp">${`<img src="/pieces/${victim}${t.toUpperCase()}.svg" alt="" draggable="false">`.repeat(taken[t])}</span>`)
+        .join('');
+    return groups + (lead > 0 ? `<span class="lead">+${lead}</span>` : '');
+}
+
+function renderCaptured() {
+    const lead = materialLead(state.fens[state.ply]); // > 0: впереди белые
+
+    const side = (by: 'w' | 'b') => {
+        const html = capturedRow(by, by === 'w' ? lead : -lead);
+        return `<div class="side ${by}">${html}</div>`;
+    };
+    $('captured').innerHTML = side('w') + side('b');
+}
+
+function castleRook(ply: number): PieceMove | null {
+    const san = state.sans[ply - 1];
+    if (!san.startsWith('O-O')) return null;
+    const rank = state.movers[ply - 1] === 'w' ? '1' : '8';
+    return san.startsWith('O-O-O') ? { from: `a${rank}`, to: `d${rank}` } : { from: `h${rank}`, to: `f${rank}` };
+}
+
+/** Что анимировать при шаге на одну позицию; на большие прыжки анимации нет. */
+function animationFor(prev: number, next: number): PieceMove[] | undefined {
+    if (Math.abs(next - prev) !== 1) return undefined;
+    const ply = Math.max(prev, next);
+    const uci = state.ucis[ply - 1];
+    const src = uci.slice(0, 2);
+    const dst = uci.slice(2, 4);
+    const rook = castleRook(ply);
+    return next > prev
+        ? [{ from: src, to: dst }, ...(rook ? [rook] : [])]
+        : [{ from: dst, to: src }, ...(rook ? [{ from: rook.to, to: rook.from }] : [])];
+}
+
+function playMoveSound(ply: number, forward = true) {
+    const san = state.sans[ply - 1];
+    const capture = san.includes('x');
+    const castle = san.startsWith('O-O');
+
+    // звук конца партии только при шаге вперёд на последний ход
+    if (forward && ply === state.fens.length - 1 && state.finished) {
+        if (san.includes('#')) return playSound('end');
+        playSound(capture ? 'capture' : castle ? 'castle' : 'move');
+        setTimeout(() => playSound('end'), 350);
+        return;
+    }
+    playSound(san.includes('+') || san.includes('#') ? 'check' : castle ? 'castle' : capture ? 'capture' : 'move');
+}
+
+function setPly(p: number, interactive = true) {
+    const prev = state.ply;
     state.ply = Math.max(0, Math.min(state.fens.length - 1, p));
-    render();
+    render(interactive ? animationFor(prev, state.ply) : undefined);
+
+    // шаг на один ход в любую сторону: звук хода, который сыгран или отменён
+    if (interactive && Math.abs(state.ply - prev) === 1)
+        playMoveSound(Math.max(prev, state.ply), state.ply > prev);
 }
 
 function setStatus(text: string, error = false) {
@@ -424,5 +507,18 @@ $<HTMLInputElement>('import_file').addEventListener('change', async (e) => {
         setStatus(err instanceof Error ? err.message : 'Не удалось прочитать файл', true);
     }
 });
+
+const soundBtn = $<HTMLButtonElement>('sound');
+const ICON_ON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M14,20.73V18.68q2.25-0.65 3.63-2.5T19,11.98t-1.38-4.2Q16.25,5.93 14,5.27V3.22q3.1,0.7 5.05,3.14T21,11.98t-1.95,5.61T14,20.73ZM3,15V9H7l5-5V20L7,15H3Zm11,1V7.95Q15.18,8.5 15.84,9.6T16.5,12q0,1.27-0.66,2.36T14,16ZM10,8.85L7.85,11H5v2H7.85L10,15.15V8.85ZM7.5,12Z"/></svg>';
+const ICON_OFF = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="24px" width="24px" fill="#e3e3e3"><path d="M19.8,22.6l-3.02-3.03q-0.63,0.4-1.33,0.69T14,20.73V18.68q0.35-0.13 0.69-0.25q0.34-0.13 0.64-0.3L12,14.8V20L7,15H3V9H6.2L1.4,4.2L2.8,2.8L21.2,21.2l-1.4,1.4Zm-0.2-5.8l-1.45-1.45q0.42-0.78 0.64-1.63T19,11.98q0-2.35-1.38-4.2Q16.25,5.93 14,5.27V3.22q3.1,0.7 5.05,3.14T21,11.98q0,1.32-0.36,2.55T19.6,16.8Zm-3.35-3.35L14,11.2V7.95Q15.18,8.5 15.84,9.6T16.5,12q0,0.38-0.06,0.74t-0.19,0.71ZM12,9.2L9.4,6.6L12,4V9.2Zm-2,5.95V12.8L8.2,11H5v2H7.85L10,15.15ZM9.1,11.9Z"/></svg>';
+
+const syncSound = () => { soundBtn.innerHTML = isMuted() ? ICON_OFF : ICON_ON; };
+soundBtn.addEventListener('click', () => {
+    setMuted(!isMuted());
+    syncSound();
+    if (!isMuted()) playSound('move');
+});
+syncSound();
+preloadSounds();
 
 render();
