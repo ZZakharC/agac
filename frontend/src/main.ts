@@ -7,6 +7,7 @@ import { startAnalysis, getMode, setMode, getServer, setServer, type Mode } from
 import { startLocalAnalysis } from './localAnalysis';
 import { buildExport, exportFileName, parseImport, saveFile } from './io';
 import { isMuted, playSound, preloadSounds, setMuted } from './sound';
+import { onSharedPgn } from './share';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -306,6 +307,29 @@ function setRunning(running: boolean) {
     $('analyze').textContent = running ? 'Остановить' : 'Анализировать';
     $('progress').hidden = !running;
 }
+
+onSharedPgn((text) => {
+    if (job) {
+        stopTimer();
+        job.cancel();
+        job = null;
+        setRunning(false);
+    }
+
+    pgn.value = text;
+
+    try {
+        loadGame(text);
+    } catch (e) {
+        setStatus(e instanceof Error ? e.message : 'Некорректный PGN', true);
+        return;
+    }
+
+    renderMoves();
+    renderSummary();
+    render();
+    setStatus('Партия получена, нажмите «Анализировать»');
+}, (message) => setStatus(message, true));
 
 $('analyze').addEventListener('click', () => {
     if (job) {

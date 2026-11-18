@@ -35,6 +35,7 @@ if [ -d "android" ]; then
     printf "Android has already been added\n"
 else
     npx cap add android
+    node scripts/patch-android.mjs
 fi
 
 npx capacitor-assets generate --android
