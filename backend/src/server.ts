@@ -33,10 +33,10 @@ server.listen(PORT, HOST, () => {
         for (const [name, addresses] of Object.entries(networkInterfaces()))
             for (const address of addresses ?? [])
                 if (address.family === 'IPv4' && !address.internal)
-                    console.log(`  \x1b[1;34m->\x1b[0m  Network: <http/ws>://\x1b[1m${address.address}:${PORT}\x1b[0m/<api/ws>\t\x1b[30m${name}\x1b[0m`);
+                    console.log(`  \x1b[1;34m->\x1b[0m  Network: <http/ws>://\x1b[1m${address.address}:${PORT}\x1b[0m/<api/ws>\t\x1b[90m${name}\x1b[0m`);
 
         console.log();
     }
 
-    console.log(`\x1b[1mStockfish\x1b[0m: ${STOCKFISH_PATH} \x1b[30mT: ${STOCKFISH_THREADS} H: ${STOCKFISH_HASH}\n\x1b[0m`);
+    console.log(`\x1b[1mStockfish\x1b[0m: ${STOCKFISH_PATH} \x1b[90mT: ${STOCKFISH_THREADS} H: ${STOCKFISH_HASH}\n\x1b[0m`);
 });
